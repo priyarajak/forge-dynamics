@@ -1,6 +1,6 @@
 import React from 'react';
 import NavigationOptimized from '@/components/NavigationOptimized';
-import HeroWeighingSection from '@/components/HeroWeighingSection';
+import HeroPitSection from '@/components/HeroPitSection';
 import ProductSectionOptimized from '@/components/ProductSectionOptimized';
 import StatsSection from '@/components/StatsSection';
 import FeaturesSection from '@/components/FeaturesSection';
@@ -16,8 +16,8 @@ const Index: React.FC = () => {
 
       {/* Main Content */}
       <main>
-        {/* Hero with Story-Driven Weighing Sequence */}
-        <HeroWeighingSection />
+        {/* Hero with Story-Driven Pit Weighbridge Sequence */}
+        <HeroPitSection />
 
         {/* Product Section */}
         <ProductSectionOptimized />
