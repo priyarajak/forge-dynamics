@@ -32,7 +32,7 @@ const NavigationOptimized: React.FC = () => {
         <div className="flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
             <div className="w-8 h-8 bg-primary rotate-45" />
-            <span className="text-mono text-lg font-bold tracking-wider">TECHMASS</span>
+            <span className="text-mono text-lg font-bold tracking-wider">Eco Weighing Solutions</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-8">

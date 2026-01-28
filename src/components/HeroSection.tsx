@@ -182,7 +182,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
         <div className="absolute top-8 left-8 z-10">
           <div className="flex items-center gap-3">
             <div className="w-3 h-3 bg-primary animate-pulse-glow" />
-            <span className="text-mono text-primary text-sm">TECHMASS</span>
+            <span className="text-mono text-primary text-sm">Eco Weighing Solutions</span>
           </div>
         </div>
 

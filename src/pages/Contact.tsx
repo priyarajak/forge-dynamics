@@ -30,12 +30,12 @@ const contactInfo = [
   {
     icon: <Phone className="w-5 h-5" />,
     title: 'Call Us',
-    details: ['+91 11 2345 6789', '+91 98765 43210', 'Toll Free: 1800-123-4567'],
+    details: ['+91 7363838830', '+91 9434140457'],
   },
   {
     icon: <Mail className="w-5 h-5" />,
     title: 'Email Us',
-    details: ['info@techmass.com', 'sales@techmass.com', 'support@techmass.com'],
+    details: ['ecoweighingsols@gmail.com'],
   },
   {
     icon: <Clock className="w-5 h-5" />,
