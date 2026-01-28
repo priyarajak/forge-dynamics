@@ -133,13 +133,6 @@ const HeroPitSection: React.FC = () => {
           </div>
         </div>
 
-        {/* Center Brand Mark */}
-        <div className="absolute top-6 left-6 md:left-8 z-20">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 md:w-3 md:h-3 bg-primary animate-pulse" />
-            <span className="text-mono text-primary text-xs md:text-sm tracking-widest">eco</span>
-          </div>
-        </div>
 
         {/* Phase Indicator */}
         <div className="absolute top-6 right-6 md:right-8 z-20 text-right">
