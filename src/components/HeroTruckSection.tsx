@@ -155,7 +155,7 @@ const HeroTruckSection: React.FC = () => {
         <div className="absolute top-8 left-1/2 -translate-x-1/2 z-20">
           <div className="flex items-center gap-3">
             <div className="w-3 h-3 bg-primary animate-pulse-glow" />
-            <span className="text-mono text-primary text-sm tracking-widest">TECHMASS</span>
+            <span className="text-mono text-primary text-sm tracking-widest">Eco Weighing Solutions</span>
             <div className="w-3 h-3 bg-primary animate-pulse-glow" />
           </div>
         </div>

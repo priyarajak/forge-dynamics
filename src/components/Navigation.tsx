@@ -36,7 +36,7 @@ const Navigation: React.FC<NavigationProps> = ({ scrollProgress }) => {
             <div className="flex items-center gap-3">
               <div className="w-3 h-3 bg-primary animate-pulse-glow" />
               <span className="text-mono text-primary text-lg font-bold tracking-wider">
-                TECHMASS
+                Eco Weighing Solutions
               </span>
             </div>
 

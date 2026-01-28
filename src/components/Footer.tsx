@@ -13,7 +13,7 @@ const Footer: React.FC = () => {
             <div className="flex items-center gap-3 mb-6">
               <div className="w-3 h-3 bg-primary animate-pulse-glow" />
               <span className="text-mono text-primary text-lg font-bold">
-                TECHMASS
+                Eco Weighing Solutions
               </span>
             </div>
             <p className="text-muted-foreground text-sm leading-relaxed">
@@ -69,8 +69,9 @@ const Footer: React.FC = () => {
               Contact
             </h4>
             <ul className="space-y-3 text-muted-foreground text-sm">
-              <li>+1 (555) 123-4567</li>
-              <li>sales@techmass.io</li>
+              <li>+91 7363838830</li>
+              <li>+91 9434140457</li>
+              <li>ecoweighingsols@gmail.com</li>
               <li>
                 Industrial Park Zone 7
                 <br />
@@ -84,7 +85,7 @@ const Footer: React.FC = () => {
         <div className="pt-8 border-t border-border/30">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="text-mono text-muted-foreground text-xs">
-              © 2024 TECHMASS Industries. All rights reserved.
+              © 2024 Eco Weighing Solutions. All rights reserved.
             </div>
             <div className="flex items-center gap-6">
               <a

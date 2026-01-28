@@ -89,7 +89,7 @@ const About: React.FC = () => {
               <h2 className="text-3xl md:text-4xl font-bold mb-6">Our Story</h2>
               <div className="space-y-4 text-muted-foreground">
                 <p>
-                  Founded in 1994, TechMass began with a simple mission: to provide 
+                  Founded in 1994, Eco Weighing Solutions began with a simple mission: to provide 
                   Indian industries with world-class weighing solutions that combine 
                   precision engineering with unmatched reliability.
                 </p>
