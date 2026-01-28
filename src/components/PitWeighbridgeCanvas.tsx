@@ -220,11 +220,11 @@ function updateParticles(
     }
   }
 
-  // Add new particles if truck is moving
+  // Add new particles if truck is moving (smoke comes from the back, which is now on the left)
   if (isMoving && particles.length < 30) {
     for (let i = 0; i < 2; i++) {
       particles.push({
-        x: truckX - 150 + Math.random() * 20,
+        x: truckX - 200 + Math.random() * 20,
         y: truckY - 30 + Math.random() * 20,
         vx: -1 - Math.random() * 2,
         vy: -0.5 - Math.random() * 1.5,
@@ -470,7 +470,8 @@ function drawTruck(
   ctx.save();
   ctx.globalAlpha = opacity;
   ctx.translate(x, y + vibration);
-  ctx.scale(scale, scale);
+  // Flip horizontally to make truck face right
+  ctx.scale(-scale, scale);
 
   // Truck dimensions
   const cabLength = 100;
