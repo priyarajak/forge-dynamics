@@ -14,11 +14,11 @@ interface Particle {
 
 // Animation phases mapped to scroll progress
 const PHASES = {
-  enter: { start: 0, end: 0.2 },       // Truck enters from left
-  climb: { start: 0.2, end: 0.35 },    // Truck climbs up onto weighbridge
-  weigh: { start: 0.35, end: 0.6 },    // Weighing pause
-  descend: { start: 0.6, end: 0.75 },  // Truck descends from weighbridge
-  exit: { start: 0.75, end: 1 },       // Truck exits to right
+  enter: { start: 0, end: 0.2 },      // Truck enters from left
+  descend: { start: 0.2, end: 0.35 }, // Truck descends into pit
+  weigh: { start: 0.35, end: 0.6 },   // Weighing pause
+  ascend: { start: 0.6, end: 0.75 },  // Truck rises out of pit
+  exit: { start: 0.75, end: 1 },      // Truck exits to right and fades
 };
 
 function getPhaseProgress(progress: number, phase: { start: number; end: number }): number {
@@ -85,9 +85,9 @@ const PitWeighbridgeCanvas: React.FC = () => {
 
     // Calculate phase progress
     const enterProgress = getPhaseProgress(progress, PHASES.enter);
-    const climbProgress = getPhaseProgress(progress, PHASES.climb);
-    const weighProgress = getPhaseProgress(progress, PHASES.weigh);
     const descendProgress = getPhaseProgress(progress, PHASES.descend);
+    const weighProgress = getPhaseProgress(progress, PHASES.weigh);
+    const ascendProgress = getPhaseProgress(progress, PHASES.ascend);
     const exitProgress = getPhaseProgress(progress, PHASES.exit);
 
     // Calculate truck position
@@ -95,9 +95,9 @@ const PitWeighbridgeCanvas: React.FC = () => {
       width,
       height,
       enterProgress,
-      climbProgress,
-      weighProgress,
       descendProgress,
+      weighProgress,
+      ascendProgress,
       exitProgress
     );
 
@@ -107,7 +107,7 @@ const PitWeighbridgeCanvas: React.FC = () => {
       stateRef.current.weightValue += (targetWeight - stateRef.current.weightValue) * 0.03;
       stateRef.current.glowIntensity = Math.min(weighProgress * 2, 1);
       stateRef.current.vibration = Math.sin(state.time * 0.04) * (1 - weighProgress) * 2;
-    } else if (descendProgress > 0 || exitProgress > 0) {
+    } else if (ascendProgress > 0 || exitProgress > 0) {
       stateRef.current.glowIntensity *= 0.95;
       stateRef.current.vibration *= 0.9;
     }
@@ -127,7 +127,7 @@ const PitWeighbridgeCanvas: React.FC = () => {
     // Draw scene layers
     drawBackground(ctx, width, height, state.time);
     drawRoad(ctx, width, height);
-    drawElevatedWeighbridge(ctx, width, height, stateRef.current.glowIntensity, stateRef.current.vibration);
+    drawPitWeighbridge(ctx, width, height, stateRef.current.glowIntensity, stateRef.current.vibration);
     drawParticles(ctx, particlesRef.current);
     drawTruck(ctx, truckData, stateRef.current.vibration, state.time);
     drawWeightIndicator(ctx, width, height, stateRef.current.weightValue, stateRef.current.glowIntensity, weighProgress);
@@ -146,59 +146,59 @@ function calculateTruckPosition(
   width: number,
   height: number,
   enterProgress: number,
-  climbProgress: number,
-  weighProgress: number,
   descendProgress: number,
+  weighProgress: number,
+  ascendProgress: number,
   exitProgress: number
 ) {
-  const groundY = height * 0.68;
+  const groundY = height * 0.65;
   const pitCenterX = width * 0.5;
-  const platformHeight = 45; // Platform is ABOVE ground
+  const pitDepth = 50;
   const scale = Math.min(width / 1920, 1);
 
   // Starting position (off-screen left)
-  let x = -350;
+  let x = -300;
   let y = groundY;
-  let truckScale = 0.85;
+  let truckScale = 0.8;
   let opacity = 1;
   let isMoving = false;
 
-  // Phase 1: Enter from left (truck facing right)
+  // Phase 1: Enter from left
   if (enterProgress > 0) {
     const t = easeOutCubic(enterProgress);
-    x = -350 + t * (pitCenterX - 50);
+    x = -300 + t * (pitCenterX + 100);
     isMoving = enterProgress < 1;
   }
 
-  // Phase 2: Climb UP onto elevated weighbridge
-  if (climbProgress > 0) {
-    const t = easeInOutCubic(climbProgress);
-    x = pitCenterX - 50 + t * 50;
-    y = groundY - t * platformHeight; // Move UP
-    isMoving = climbProgress < 1;
+  // Phase 2: Descend into pit
+  if (descendProgress > 0) {
+    const t = easeInOutCubic(descendProgress);
+    x = pitCenterX - 200 + t * 200;
+    y = groundY + t * pitDepth;
+    isMoving = descendProgress < 1;
   }
 
-  // Phase 3: Weighing (on platform)
-  if (weighProgress > 0 && descendProgress === 0) {
+  // Phase 3: Weighing (slight settle)
+  if (weighProgress > 0 && ascendProgress === 0) {
     x = pitCenterX;
-    y = groundY - platformHeight;
+    y = groundY + pitDepth;
     isMoving = false;
   }
 
-  // Phase 4: Descend from weighbridge
-  if (descendProgress > 0) {
-    const t = easeInOutCubic(descendProgress);
-    x = pitCenterX + t * 50;
-    y = groundY - platformHeight + t * platformHeight; // Move DOWN
-    isMoving = descendProgress < 1;
+  // Phase 4: Ascend out of pit
+  if (ascendProgress > 0) {
+    const t = easeInOutCubic(ascendProgress);
+    x = pitCenterX + t * 200;
+    y = groundY + pitDepth - t * pitDepth;
+    isMoving = ascendProgress < 1;
   }
 
   // Phase 5: Exit to right
   if (exitProgress > 0) {
     const t = easeInCubic(exitProgress);
-    x = pitCenterX + 50 + t * (width - pitCenterX + 300);
+    x = pitCenterX + 200 + t * (width - pitCenterX + 300);
     y = groundY;
-    opacity = 1 - easeInCubic(exitProgress * 1.2);
+    opacity = 1 - easeInCubic(exitProgress);
     isMoving = exitProgress < 0.9;
   }
 
@@ -220,18 +220,18 @@ function updateParticles(
     }
   }
 
-  // Add new particles behind truck (exhaust on left side since truck faces right)
-  if (isMoving && particles.length < 25) {
+  // Add new particles if truck is moving
+  if (isMoving && particles.length < 30) {
     for (let i = 0; i < 2; i++) {
       particles.push({
-        x: truckX - 140 + Math.random() * 15,
-        y: truckY - 25 + Math.random() * 15,
-        vx: -0.8 - Math.random() * 1.5,
-        vy: -0.4 - Math.random() * 1.2,
-        life: 0.8 + Math.random() * 0.4,
-        maxLife: 1.2,
-        size: 6 + Math.random() * 10,
-        opacity: 0.25 + Math.random() * 0.15,
+        x: truckX - 150 + Math.random() * 20,
+        y: truckY - 30 + Math.random() * 20,
+        vx: -1 - Math.random() * 2,
+        vy: -0.5 - Math.random() * 1.5,
+        life: 1 + Math.random() * 0.5,
+        maxLife: 1.5,
+        size: 8 + Math.random() * 12,
+        opacity: 0.3 + Math.random() * 0.2,
       });
     }
   }
@@ -240,9 +240,9 @@ function updateParticles(
   particles.forEach((p) => {
     p.x += p.vx;
     p.y += p.vy;
-    p.vy -= 0.015; // Drift upward
-    p.vx *= 0.98;
-    p.size *= 1.008;
+    p.vy -= 0.02; // Drift upward
+    p.vx *= 0.99; // Slow down horizontally
+    p.size *= 1.01; // Grow slightly
   });
 }
 
@@ -252,8 +252,8 @@ function drawParticles(ctx: CanvasRenderingContext2D, particles: Particle[]) {
     const alpha = p.opacity * lifeRatio;
 
     const gradient = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
-    gradient.addColorStop(0, `rgba(160, 160, 160, ${alpha * 0.4})`);
-    gradient.addColorStop(0.5, `rgba(100, 100, 100, ${alpha * 0.2})`);
+    gradient.addColorStop(0, `rgba(180, 180, 180, ${alpha * 0.5})`);
+    gradient.addColorStop(0.5, `rgba(120, 120, 120, ${alpha * 0.3})`);
     gradient.addColorStop(1, 'transparent');
 
     ctx.fillStyle = gradient;
@@ -264,11 +264,11 @@ function drawParticles(ctx: CanvasRenderingContext2D, particles: Particle[]) {
 }
 
 function drawBackground(ctx: CanvasRenderingContext2D, width: number, height: number, time: number) {
-  // Subtle animated grid
+  // Animated grid
   const gridSize = 80;
   const pulse = Math.sin(time * 0.001) * 0.3 + 0.7;
 
-  ctx.strokeStyle = `rgba(0, 240, 255, ${0.012 * pulse})`;
+  ctx.strokeStyle = `rgba(0, 240, 255, ${0.015 * pulse})`;
   ctx.lineWidth = 1;
 
   for (let y = 0; y < height; y += gridSize) {
@@ -287,164 +287,175 @@ function drawBackground(ctx: CanvasRenderingContext2D, width: number, height: nu
 }
 
 function drawRoad(ctx: CanvasRenderingContext2D, width: number, height: number) {
-  const groundY = height * 0.68;
+  const groundY = height * 0.65;
 
-  // Road surface gradient
-  const roadGradient = ctx.createLinearGradient(0, groundY - 30, 0, height);
+  // Road surface
+  const roadGradient = ctx.createLinearGradient(0, groundY - 50, 0, height);
   roadGradient.addColorStop(0, 'transparent');
-  roadGradient.addColorStop(0.15, 'rgba(22, 22, 28, 0.9)');
-  roadGradient.addColorStop(1, 'rgba(12, 12, 16, 1)');
+  roadGradient.addColorStop(0.2, 'rgba(25, 25, 30, 0.9)');
+  roadGradient.addColorStop(1, 'rgba(15, 15, 20, 1)');
 
   ctx.fillStyle = roadGradient;
-  ctx.fillRect(0, groundY - 30, width, height - groundY + 30);
+  ctx.fillRect(0, groundY - 50, width, height - groundY + 50);
 
-  // Road edge
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+  // Road edge line
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
   ctx.lineWidth = 2;
   ctx.beginPath();
   ctx.moveTo(0, groundY);
   ctx.lineTo(width, groundY);
   ctx.stroke();
 
-  // Center line dashes
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.06)';
+  // Road markings (dashed center line)
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
   ctx.lineWidth = 3;
-  ctx.setLineDash([45, 35]);
+  ctx.setLineDash([50, 40]);
   ctx.beginPath();
-  ctx.moveTo(0, groundY + 35);
-  ctx.lineTo(width, groundY + 35);
+  ctx.moveTo(0, groundY + 40);
+  ctx.lineTo(width, groundY + 40);
   ctx.stroke();
   ctx.setLineDash([]);
 }
 
-function drawElevatedWeighbridge(
+function drawPitWeighbridge(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
   glowIntensity: number,
   vibration: number
 ) {
-  const groundY = height * 0.68;
+  const groundY = height * 0.65;
   const pitCenterX = width * 0.5;
-  const platformWidth = 320;
-  const platformHeight = 45;
-  const platformTop = groundY - platformHeight;
+  const pitWidth = 350;
+  const pitDepth = 60;
+  const scale = Math.min(width / 1920, 1);
 
-  // Platform shadow on ground
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+  // Pit excavation (dark void)
+  ctx.fillStyle = 'rgba(5, 5, 10, 0.95)';
   ctx.beginPath();
-  ctx.ellipse(pitCenterX, groundY + 10, platformWidth * 0.9, 15, 0, 0, Math.PI * 2);
+  ctx.moveTo(pitCenterX - pitWidth, groundY);
+  ctx.lineTo(pitCenterX + pitWidth, groundY);
+  ctx.lineTo(pitCenterX + pitWidth * 0.9, groundY + pitDepth);
+  ctx.lineTo(pitCenterX - pitWidth * 0.9, groundY + pitDepth);
+  ctx.closePath();
   ctx.fill();
 
-  // Left ramp
-  ctx.fillStyle = '#1e1e24';
-  ctx.strokeStyle = 'rgba(0, 240, 255, 0.12)';
+  // Pit walls
+  ctx.fillStyle = '#1a1a20';
+  ctx.strokeStyle = 'rgba(0, 240, 255, 0.15)';
   ctx.lineWidth = 1;
+
+  // Left pit wall
   ctx.beginPath();
-  ctx.moveTo(pitCenterX - platformWidth - 80, groundY);
-  ctx.lineTo(pitCenterX - platformWidth, groundY);
-  ctx.lineTo(pitCenterX - platformWidth, platformTop + vibration);
-  ctx.lineTo(pitCenterX - platformWidth - 80, groundY);
+  ctx.moveTo(pitCenterX - pitWidth, groundY);
+  ctx.lineTo(pitCenterX - pitWidth * 0.9, groundY + pitDepth);
+  ctx.lineTo(pitCenterX - pitWidth * 0.9, groundY + pitDepth + 30);
+  ctx.lineTo(pitCenterX - pitWidth, groundY + 20);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Right pit wall
+  ctx.beginPath();
+  ctx.moveTo(pitCenterX + pitWidth, groundY);
+  ctx.lineTo(pitCenterX + pitWidth * 0.9, groundY + pitDepth);
+  ctx.lineTo(pitCenterX + pitWidth * 0.9, groundY + pitDepth + 30);
+  ctx.lineTo(pitCenterX + pitWidth, groundY + 20);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  // Weighbridge platform
+  const platformY = groundY + pitDepth - 8 + vibration;
+
+  // Platform glow
+  if (glowIntensity > 0) {
+    const glowGradient = ctx.createRadialGradient(
+      pitCenterX, platformY, 0,
+      pitCenterX, platformY, pitWidth * 1.2
+    );
+    glowGradient.addColorStop(0, `rgba(0, 240, 255, ${0.25 * glowIntensity})`);
+    glowGradient.addColorStop(0.5, `rgba(0, 240, 255, ${0.08 * glowIntensity})`);
+    glowGradient.addColorStop(1, 'transparent');
+
+    ctx.fillStyle = glowGradient;
+    ctx.fillRect(pitCenterX - pitWidth * 1.5, platformY - 80, pitWidth * 3, 200);
+  }
+
+  // Platform surface
+  const platformGradient = ctx.createLinearGradient(pitCenterX - pitWidth * 0.85, 0, pitCenterX + pitWidth * 0.85, 0);
+  platformGradient.addColorStop(0, '#2a2a32');
+  platformGradient.addColorStop(0.5, glowIntensity > 0 ? `rgba(55, 65, 70, ${0.9 + glowIntensity * 0.1})` : '#3a3a42');
+  platformGradient.addColorStop(1, '#2a2a32');
+
+  ctx.fillStyle = platformGradient;
+  ctx.strokeStyle = glowIntensity > 0 ? `rgba(0, 240, 255, ${0.4 + glowIntensity * 0.4})` : 'rgba(0, 240, 255, 0.25)';
+  ctx.lineWidth = 2;
+
+  ctx.beginPath();
+  ctx.rect(pitCenterX - pitWidth * 0.85, platformY, pitWidth * 1.7, 15);
+  ctx.fill();
+  ctx.stroke();
+
+  // Tread plate pattern
+  ctx.strokeStyle = `rgba(255, 255, 255, ${0.04 + glowIntensity * 0.02})`;
+  ctx.lineWidth = 1;
+  for (let i = -10; i <= 10; i++) {
+    const x1 = pitCenterX + i * 25 * scale;
+    ctx.beginPath();
+    ctx.moveTo(x1, platformY + 2);
+    ctx.lineTo(x1 - 10, platformY + 13);
+    ctx.stroke();
+  }
+
+  // Load cells (sensor points)
+  const loadCells = [
+    { x: -pitWidth * 0.7, y: platformY + 7 },
+    { x: pitWidth * 0.7, y: platformY + 7 },
+    { x: -pitWidth * 0.35, y: platformY + 7 },
+    { x: pitWidth * 0.35, y: platformY + 7 },
+  ];
+
+  loadCells.forEach((cell) => {
+    const glow = ctx.createRadialGradient(pitCenterX + cell.x, cell.y, 0, pitCenterX + cell.x, cell.y, 12);
+    glow.addColorStop(0, `rgba(0, 240, 255, ${0.5 + glowIntensity * 0.5})`);
+    glow.addColorStop(0.5, `rgba(0, 240, 255, ${0.15 * (1 + glowIntensity)})`);
+    glow.addColorStop(1, 'transparent');
+
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(pitCenterX + cell.x, cell.y, 12, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#00f0ff';
+    ctx.beginPath();
+    ctx.arc(pitCenterX + cell.x, cell.y, 3, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // Entry/exit ramps
+  ctx.fillStyle = '#222228';
+  ctx.strokeStyle = 'rgba(0, 240, 255, 0.1)';
+
+  // Left ramp
+  ctx.beginPath();
+  ctx.moveTo(pitCenterX - pitWidth - 100, groundY);
+  ctx.lineTo(pitCenterX - pitWidth, groundY);
+  ctx.lineTo(pitCenterX - pitWidth * 0.9, groundY + pitDepth - 8);
+  ctx.lineTo(pitCenterX - pitWidth - 50, groundY + pitDepth - 8);
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
 
   // Right ramp
   ctx.beginPath();
-  ctx.moveTo(pitCenterX + platformWidth + 80, groundY);
-  ctx.lineTo(pitCenterX + platformWidth, groundY);
-  ctx.lineTo(pitCenterX + platformWidth, platformTop + vibration);
-  ctx.lineTo(pitCenterX + platformWidth + 80, groundY);
+  ctx.moveTo(pitCenterX + pitWidth + 100, groundY);
+  ctx.lineTo(pitCenterX + pitWidth, groundY);
+  ctx.lineTo(pitCenterX + pitWidth * 0.9, groundY + pitDepth - 8);
+  ctx.lineTo(pitCenterX + pitWidth + 50, groundY + pitDepth - 8);
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
-
-  // Platform base/supports
-  ctx.fillStyle = '#151518';
-  ctx.beginPath();
-  ctx.moveTo(pitCenterX - platformWidth, groundY);
-  ctx.lineTo(pitCenterX + platformWidth, groundY);
-  ctx.lineTo(pitCenterX + platformWidth, platformTop + vibration);
-  ctx.lineTo(pitCenterX - platformWidth, platformTop + vibration);
-  ctx.closePath();
-  ctx.fill();
-
-  // Support pillars
-  ctx.fillStyle = '#1a1a1f';
-  const pillarWidth = 25;
-  const pillarPositions = [-platformWidth * 0.7, -platformWidth * 0.3, platformWidth * 0.3, platformWidth * 0.7];
-  pillarPositions.forEach((offset) => {
-    ctx.fillRect(pitCenterX + offset - pillarWidth / 2, platformTop + vibration, pillarWidth, platformHeight);
-  });
-
-  // Platform glow effect
-  if (glowIntensity > 0) {
-    const glowGradient = ctx.createRadialGradient(
-      pitCenterX, platformTop + vibration - 20, 0,
-      pitCenterX, platformTop + vibration - 20, platformWidth * 1.3
-    );
-    glowGradient.addColorStop(0, `rgba(0, 240, 255, ${0.2 * glowIntensity})`);
-    glowGradient.addColorStop(0.4, `rgba(0, 240, 255, ${0.06 * glowIntensity})`);
-    glowGradient.addColorStop(1, 'transparent');
-
-    ctx.fillStyle = glowGradient;
-    ctx.fillRect(pitCenterX - platformWidth * 1.5, platformTop - 100, platformWidth * 3, 150);
-  }
-
-  // Platform deck surface
-  const deckGradient = ctx.createLinearGradient(pitCenterX - platformWidth, 0, pitCenterX + platformWidth, 0);
-  deckGradient.addColorStop(0, '#28282e');
-  deckGradient.addColorStop(0.5, glowIntensity > 0 ? `rgba(50, 58, 62, ${0.9 + glowIntensity * 0.1})` : '#38383e');
-  deckGradient.addColorStop(1, '#28282e');
-
-  ctx.fillStyle = deckGradient;
-  ctx.strokeStyle = glowIntensity > 0 ? `rgba(0, 240, 255, ${0.35 + glowIntensity * 0.4})` : 'rgba(0, 240, 255, 0.2)';
-  ctx.lineWidth = 2;
-
-  const deckY = platformTop - 12 + vibration;
-  ctx.beginPath();
-  ctx.rect(pitCenterX - platformWidth, deckY, platformWidth * 2, 14);
-  ctx.fill();
-  ctx.stroke();
-
-  // Tread plate pattern
-  ctx.strokeStyle = `rgba(255, 255, 255, ${0.03 + glowIntensity * 0.015})`;
-  ctx.lineWidth = 1;
-  for (let i = -12; i <= 12; i++) {
-    const x1 = pitCenterX + i * 22;
-    ctx.beginPath();
-    ctx.moveTo(x1, deckY + 2);
-    ctx.lineTo(x1 - 8, deckY + 12);
-    ctx.stroke();
-  }
-
-  // Load cells (sensor indicators)
-  const loadCells = [
-    { x: -platformWidth * 0.75 },
-    { x: platformWidth * 0.75 },
-    { x: -platformWidth * 0.25 },
-    { x: platformWidth * 0.25 },
-  ];
-
-  loadCells.forEach((cell) => {
-    const cellX = pitCenterX + cell.x;
-    const cellY = deckY + 7;
-
-    const glow = ctx.createRadialGradient(cellX, cellY, 0, cellX, cellY, 10);
-    glow.addColorStop(0, `rgba(0, 240, 255, ${0.5 + glowIntensity * 0.5})`);
-    glow.addColorStop(0.5, `rgba(0, 240, 255, ${0.12 * (1 + glowIntensity)})`);
-    glow.addColorStop(1, 'transparent');
-
-    ctx.fillStyle = glow;
-    ctx.beginPath();
-    ctx.arc(cellX, cellY, 10, 0, Math.PI * 2);
-    ctx.fill();
-
-    ctx.fillStyle = '#00f0ff';
-    ctx.beginPath();
-    ctx.arc(cellX, cellY, 2.5, 0, Math.PI * 2);
-    ctx.fill();
-  });
 }
 
 function drawTruck(
@@ -459,30 +470,30 @@ function drawTruck(
   ctx.save();
   ctx.globalAlpha = opacity;
   ctx.translate(x, y + vibration);
-  ctx.scale(scale, scale); // Truck facing RIGHT (no mirror)
+  ctx.scale(scale, scale);
 
   // Truck dimensions
-  const cabLength = 95;
-  const cabHeight = 85;
-  const containerLength = 210;
-  const containerHeight = 105;
-  const wheelRadius = 28;
+  const cabLength = 100;
+  const cabHeight = 90;
+  const containerLength = 220;
+  const containerHeight = 110;
+  const wheelRadius = 30;
 
   // Shadow under truck
-  ctx.fillStyle = `rgba(0, 0, 0, ${0.45 * opacity})`;
+  ctx.fillStyle = `rgba(0, 0, 0, ${0.5 * opacity})`;
   ctx.beginPath();
-  ctx.ellipse(50, 28, 170, 18, 0, 0, Math.PI * 2);
+  ctx.ellipse(50, 30, 180, 20, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // Container (trailer) - positioned to the RIGHT of cab
-  const containerX = cabLength + 15;
+  // Container (trailer)
+  const containerX = 20;
   const containerGradient = ctx.createLinearGradient(containerX, 0, containerX + containerLength, 0);
-  containerGradient.addColorStop(0, '#262630');
-  containerGradient.addColorStop(0.5, '#36363e');
-  containerGradient.addColorStop(1, '#262630');
+  containerGradient.addColorStop(0, '#282830');
+  containerGradient.addColorStop(0.5, '#38383f');
+  containerGradient.addColorStop(1, '#282830');
 
   ctx.fillStyle = containerGradient;
-  ctx.strokeStyle = 'rgba(0, 240, 255, 0.22)';
+  ctx.strokeStyle = 'rgba(0, 240, 255, 0.25)';
   ctx.lineWidth = 2;
 
   ctx.beginPath();
@@ -491,72 +502,72 @@ function drawTruck(
   ctx.stroke();
 
   // Container top highlight
-  ctx.fillStyle = '#46464e';
-  ctx.fillRect(containerX, -containerHeight, containerLength, 5);
+  ctx.fillStyle = '#484850';
+  ctx.fillRect(containerX, -containerHeight, containerLength, 6);
 
   // Container ridges
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.035)';
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
   ctx.lineWidth = 1;
   for (let i = 0; i < 5; i++) {
-    const rx = containerX + 18 + i * 40;
-    ctx.strokeRect(rx, -containerHeight + 10, 32, containerHeight - 18);
+    const rx = containerX + 20 + i * 42;
+    ctx.strokeRect(rx, -containerHeight + 12, 35, containerHeight - 20);
   }
 
-  // Cab (front of truck, facing RIGHT)
-  const cabX = 0;
+  // Cab
+  const cabX = containerX - cabLength - 12;
   const cabGradient = ctx.createLinearGradient(cabX, 0, cabX + cabLength, 0);
   cabGradient.addColorStop(0, '#ff6600');
-  cabGradient.addColorStop(0.5, '#ff8530');
+  cabGradient.addColorStop(0.5, '#ff8833');
   cabGradient.addColorStop(1, '#ff6600');
 
   ctx.fillStyle = cabGradient;
-  ctx.strokeStyle = 'rgba(255, 115, 0, 0.45)';
+  ctx.strokeStyle = 'rgba(255, 120, 0, 0.5)';
   ctx.lineWidth = 2;
 
   ctx.beginPath();
-  ctx.roundRect(cabX, -cabHeight, cabLength, cabHeight, [12, 12, 4, 4]);
+  ctx.roundRect(cabX, -cabHeight, cabLength, cabHeight, [14, 14, 4, 4]);
   ctx.fill();
   ctx.stroke();
 
-  // Cab windshield (on the RIGHT side of cab since truck faces right)
-  ctx.fillStyle = 'rgba(0, 200, 255, 0.18)';
-  ctx.strokeStyle = 'rgba(0, 240, 255, 0.35)';
+  // Cab windshield
+  ctx.fillStyle = 'rgba(0, 200, 255, 0.2)';
+  ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
   ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.roundRect(cabX + cabLength - 35, -cabHeight + 10, 28, cabHeight * 0.42, 6);
+  ctx.roundRect(cabX + 10, -cabHeight + 12, cabLength - 24, cabHeight * 0.45, 8);
   ctx.fill();
   ctx.stroke();
 
-  // Headlights (on RIGHT side - front of truck)
-  const headlightX = cabX + cabLength - 5;
-  const headlightGlow = ctx.createRadialGradient(headlightX, -cabHeight * 0.38, 0, headlightX, -cabHeight * 0.38, 28);
-  headlightGlow.addColorStop(0, 'rgba(255, 255, 210, 0.65)');
-  headlightGlow.addColorStop(0.35, 'rgba(255, 255, 190, 0.15)');
+  // Headlights with glow
+  const headlightX = cabX + 6;
+  const headlightGlow = ctx.createRadialGradient(headlightX, -cabHeight * 0.35, 0, headlightX, -cabHeight * 0.35, 30);
+  headlightGlow.addColorStop(0, 'rgba(255, 255, 220, 0.7)');
+  headlightGlow.addColorStop(0.4, 'rgba(255, 255, 200, 0.2)');
   headlightGlow.addColorStop(1, 'transparent');
   ctx.fillStyle = headlightGlow;
   ctx.beginPath();
-  ctx.arc(headlightX, -cabHeight * 0.38, 28, 0, Math.PI * 2);
+  ctx.arc(headlightX, -cabHeight * 0.35, 30, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.fillStyle = 'rgba(255, 255, 220, 0.85)';
+  ctx.fillStyle = 'rgba(255, 255, 230, 0.9)';
   ctx.beginPath();
-  ctx.arc(headlightX, -cabHeight * 0.38, 5, 0, Math.PI * 2);
+  ctx.arc(headlightX, -cabHeight * 0.35, 6, 0, Math.PI * 2);
   ctx.fill();
 
   // Wheels with rotation animation
-  const wheelY = -4;
-  const wheelRotation = isMoving ? time * 0.012 : 0;
+  const wheelY = -5;
+  const wheelRotation = isMoving ? time * 0.01 : 0;
   const wheelPositions = [
-    cabX + cabLength * 0.35, // Front cab wheel
-    containerX + 25,         // First trailer wheel
-    containerX + containerLength - 55, // Third trailer wheel
-    containerX + containerLength - 22, // Fourth trailer wheel
+    cabX + cabLength * 0.35,
+    containerX + 30,
+    containerX + containerLength - 60,
+    containerX + containerLength - 25,
   ];
 
   wheelPositions.forEach((wheelX) => {
     // Tire
-    ctx.fillStyle = '#181818';
-    ctx.strokeStyle = '#282828';
+    ctx.fillStyle = '#1a1a1a';
+    ctx.strokeStyle = '#2a2a2a';
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.arc(wheelX, wheelY, wheelRadius, 0, Math.PI * 2);
@@ -564,41 +575,41 @@ function drawTruck(
     ctx.stroke();
 
     // Hubcap
-    const hubGradient = ctx.createRadialGradient(wheelX, wheelY, 0, wheelX, wheelY, wheelRadius * 0.58);
-    hubGradient.addColorStop(0, '#525252');
-    hubGradient.addColorStop(0.6, '#323232');
-    hubGradient.addColorStop(1, '#202020');
+    const hubGradient = ctx.createRadialGradient(wheelX, wheelY, 0, wheelX, wheelY, wheelRadius * 0.6);
+    hubGradient.addColorStop(0, '#555');
+    hubGradient.addColorStop(0.6, '#333');
+    hubGradient.addColorStop(1, '#222');
     ctx.fillStyle = hubGradient;
     ctx.beginPath();
-    ctx.arc(wheelX, wheelY, wheelRadius * 0.58, 0, Math.PI * 2);
+    ctx.arc(wheelX, wheelY, wheelRadius * 0.6, 0, Math.PI * 2);
     ctx.fill();
 
-    // Spokes (rotating)
+    // Hub spokes (rotating)
     ctx.save();
     ctx.translate(wheelX, wheelY);
     ctx.rotate(wheelRotation);
-    ctx.strokeStyle = '#404040';
+    ctx.strokeStyle = '#444';
     ctx.lineWidth = 2;
     for (let i = 0; i < 5; i++) {
       const angle = (i / 5) * Math.PI * 2;
       ctx.beginPath();
       ctx.moveTo(0, 0);
-      ctx.lineTo(Math.cos(angle) * wheelRadius * 0.48, Math.sin(angle) * wheelRadius * 0.48);
+      ctx.lineTo(Math.cos(angle) * wheelRadius * 0.5, Math.sin(angle) * wheelRadius * 0.5);
       ctx.stroke();
     }
     ctx.restore();
 
     // Hub center
-    ctx.fillStyle = 'rgba(0, 240, 255, 0.22)';
+    ctx.fillStyle = 'rgba(0, 240, 255, 0.25)';
     ctx.beginPath();
-    ctx.arc(wheelX, wheelY, wheelRadius * 0.1, 0, Math.PI * 2);
+    ctx.arc(wheelX, wheelY, wheelRadius * 0.12, 0, Math.PI * 2);
     ctx.fill();
   });
 
-  // Tail lights (on LEFT side - back of trailer)
-  ctx.fillStyle = 'rgba(255, 35, 35, 0.75)';
-  ctx.fillRect(containerX + containerLength - 3, -containerHeight + 12, 3, 16);
-  ctx.fillRect(containerX + containerLength - 3, -22, 3, 16);
+  // Tail lights
+  ctx.fillStyle = 'rgba(255, 40, 40, 0.8)';
+  ctx.fillRect(containerX + containerLength - 4, -containerHeight + 15, 4, 18);
+  ctx.fillRect(containerX + containerLength - 4, -25, 4, 18);
 
   ctx.restore();
 }
@@ -614,47 +625,47 @@ function drawWeightIndicator(
   if (glowIntensity < 0.05) return;
 
   const scale = Math.min(width / 1920, 1);
-  const indicatorX = width - 130 * scale;
-  const indicatorY = height * 0.28;
+  const indicatorX = width - 140 * scale;
+  const indicatorY = height * 0.25;
 
-  // Panel background
-  ctx.fillStyle = `rgba(8, 10, 15, ${0.9 * glowIntensity})`;
-  ctx.strokeStyle = `rgba(0, 240, 255, ${0.45 * glowIntensity})`;
+  // Indicator panel background
+  ctx.fillStyle = `rgba(10, 12, 18, ${0.92 * glowIntensity})`;
+  ctx.strokeStyle = `rgba(0, 240, 255, ${0.5 * glowIntensity})`;
   ctx.lineWidth = 2;
 
   ctx.beginPath();
-  ctx.roundRect(indicatorX - 100 * scale, indicatorY - 45 * scale, 185 * scale, 115 * scale, 6 * scale);
+  ctx.roundRect(indicatorX - 110 * scale, indicatorY - 50 * scale, 200 * scale, 130 * scale, 8 * scale);
   ctx.fill();
   ctx.stroke();
 
-  // Label
-  ctx.fillStyle = `rgba(0, 240, 255, ${0.65 * glowIntensity})`;
-  ctx.font = `${11 * scale}px 'JetBrains Mono', monospace`;
+  // "WEIGHT" label
+  ctx.fillStyle = `rgba(0, 240, 255, ${0.7 * glowIntensity})`;
+  ctx.font = `${12 * scale}px 'JetBrains Mono', monospace`;
   ctx.textAlign = 'center';
-  ctx.fillText('WEIGHT', indicatorX, indicatorY - 20 * scale);
+  ctx.fillText('WEIGHT', indicatorX, indicatorY - 25 * scale);
 
   // Weight value
   ctx.fillStyle = `rgba(0, 240, 255, ${glowIntensity})`;
-  ctx.font = `bold ${34 * scale}px 'JetBrains Mono', monospace`;
-  ctx.fillText(weightValue.toFixed(2), indicatorX, indicatorY + 12 * scale);
+  ctx.font = `bold ${36 * scale}px 'JetBrains Mono', monospace`;
+  ctx.fillText(weightValue.toFixed(2), indicatorX, indicatorY + 15 * scale);
 
   // Unit
-  ctx.fillStyle = `rgba(0, 240, 255, ${0.55 * glowIntensity})`;
-  ctx.font = `${14 * scale}px 'JetBrains Mono', monospace`;
-  ctx.fillText('TONS', indicatorX, indicatorY + 40 * scale);
+  ctx.fillStyle = `rgba(0, 240, 255, ${0.6 * glowIntensity})`;
+  ctx.font = `${16 * scale}px 'JetBrains Mono', monospace`;
+  ctx.fillText('TONS', indicatorX, indicatorY + 45 * scale);
 
-  // Status dot
-  const statusColor = weighProgress > 0.5 ? 'rgba(0, 255, 140, 0.85)' : 'rgba(0, 240, 255, 0.85)';
+  // Status indicator
+  const statusColor = weighProgress > 0.5 ? 'rgba(0, 255, 150, 0.9)' : 'rgba(0, 240, 255, 0.9)';
   ctx.fillStyle = statusColor;
   ctx.beginPath();
-  ctx.arc(indicatorX - 65 * scale, indicatorY - 20 * scale, 3.5 * scale, 0, Math.PI * 2);
+  ctx.arc(indicatorX - 70 * scale, indicatorY - 25 * scale, 4 * scale, 0, Math.PI * 2);
   ctx.fill();
 
   // Status text
   ctx.fillStyle = statusColor;
-  ctx.font = `${9 * scale}px 'JetBrains Mono', monospace`;
+  ctx.font = `${10 * scale}px 'JetBrains Mono', monospace`;
   ctx.textAlign = 'left';
-  ctx.fillText(weighProgress > 0.5 ? 'CAPTURED' : 'MEASURING', indicatorX - 55 * scale, indicatorY - 17 * scale);
+  ctx.fillText(weighProgress > 0.5 ? 'CAPTURED' : 'MEASURING', indicatorX - 60 * scale, indicatorY - 22 * scale);
 }
 
 export default PitWeighbridgeCanvas;
