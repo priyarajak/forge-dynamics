@@ -48,9 +48,16 @@ const HeroSection: React.FC<HeroSectionProps> = ({
   const showCallouts = progress > 0.2;
 
   return (
-    <section className="relative h-[400vh] overflow-hidden">
-      {/* Pinned Container */}
-      <div className="sticky top-0 h-screen w-full overflow-hidden noise-overlay">
+    <section className="relative h-[400vh]">
+      {/* Fixed Container - stays in place while scroll spacer scrolls */}
+      <div 
+        className="fixed top-0 left-0 h-screen w-full overflow-hidden noise-overlay z-10"
+        style={{
+          opacity: progress >= 1 ? 0 : 1,
+          pointerEvents: progress >= 1 ? 'none' : 'auto',
+          transition: 'opacity 0.3s ease-out',
+        }}
+      >
         {/* Canvas Background */}
         <WeighbridgeCanvas
           progress={progress}
