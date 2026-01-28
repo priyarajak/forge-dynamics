@@ -90,7 +90,7 @@ const HeroPitSection: React.FC = () => {
   });
 
   // Split text into characters for animation
-  const headingText = 'Precision Pit Weighbridges';
+  const headingText = 'Eco Weighing Solutions';
   const chars = headingText.split('').map((char, i) => (
     <span key={i} className="char inline-block opacity-0" style={{ whiteSpace: char === ' ' ? 'pre' : 'normal' }}>
       {char}
@@ -137,7 +137,7 @@ const HeroPitSection: React.FC = () => {
         <div className="absolute top-6 left-6 md:left-8 z-20">
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 md:w-3 md:h-3 bg-primary animate-pulse" />
-            <span className="text-mono text-primary text-xs md:text-sm tracking-widest">Eco Weighing Solutions</span>
+            <span className="text-mono text-primary text-xs md:text-sm tracking-widest">eco</span>
           </div>
         </div>
 
