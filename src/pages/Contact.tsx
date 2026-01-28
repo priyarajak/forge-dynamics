@@ -10,8 +10,16 @@ interface FormData {
   email: string;
   phone: string;
   company: string;
+  products: string[];
   message: string;
 }
+
+const productOptions = [
+  { category: 'Small Weighing Machines', products: ['Electronic Table Top Scale', 'Retail Counter Scale', 'Parcel Weighing Scale', 'Kitchen Scale Pro', 'Portable Platform Scale'] },
+  { category: 'Jewellery Weighing Machines', products: ['Precision Carat Scale', 'Gold Testing Balance', 'Diamond Weighing Scale', 'Gemstone Analyzer', 'Micro Precision Balance'] },
+  { category: 'Weighbridges', products: ['Pit Type Weighbridge', 'Pitless Weighbridge', 'Portable Weighbridge', 'Modular Weighbridge', 'Rail Weighbridge'] },
+  { category: 'Industrial Weighing Machines', products: ['Heavy Duty Platform Scale', 'Crane Scale', 'Hopper Scale', 'Conveyor Belt Scale', 'Tank Weighing System'] },
+];
 
 const contactInfo = [
   {
@@ -44,12 +52,22 @@ const Contact: React.FC = () => {
     email: '',
     phone: '',
     company: '',
+    products: [],
     message: '',
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleProductToggle = (product: string) => {
+    setFormData(prev => ({
+      ...prev,
+      products: prev.products.includes(product)
+        ? prev.products.filter(p => p !== product)
+        : [...prev.products, product]
+    }));
   };
 
   const validateForm = (): boolean => {
@@ -94,6 +112,7 @@ const Contact: React.FC = () => {
         email: '',
         phone: '',
         company: '',
+        products: [],
         message: '',
       });
     } catch (error) {
@@ -134,7 +153,8 @@ const Contact: React.FC = () => {
           <div className="grid lg:grid-cols-2 gap-12">
             {/* Contact Form */}
             <div className="bg-card border border-border rounded-lg p-6 md:p-8">
-              <h2 className="text-2xl font-bold mb-6">Send Us a Message</h2>
+              <h2 className="text-2xl font-bold mb-2">Get a Quote</h2>
+              <p className="text-muted-foreground text-sm mb-6">Fill in your details and select the products you're interested in.</p>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
@@ -197,6 +217,47 @@ const Contact: React.FC = () => {
                     />
                   </div>
                 </div>
+
+                {/* Product Selection */}
+                <div>
+                  <label className="block text-sm font-medium mb-3">
+                    Products of Interest <span className="text-muted-foreground">(select all that apply)</span>
+                  </label>
+                  <div className="space-y-4 max-h-64 overflow-y-auto p-4 bg-background border border-border rounded">
+                    {productOptions.map((category) => (
+                      <div key={category.category}>
+                        <h4 className="text-xs font-semibold text-primary uppercase tracking-wider mb-2">
+                          {category.category}
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {category.products.map((product) => (
+                            <label
+                              key={product}
+                              className={`flex items-center gap-2 p-2 rounded cursor-pointer transition-colors ${
+                                formData.products.includes(product)
+                                  ? 'bg-primary/10 border border-primary'
+                                  : 'bg-muted/50 border border-transparent hover:bg-muted'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={formData.products.includes(product)}
+                                onChange={() => handleProductToggle(product)}
+                                className="w-4 h-4 accent-primary"
+                              />
+                              <span className="text-sm">{product}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {formData.products.length > 0 && (
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {formData.products.length} product(s) selected
+                    </p>
+                  )}
+                </div>
                 
                 <div>
                   <label htmlFor="message" className="block text-sm font-medium mb-2">
@@ -218,7 +279,7 @@ const Contact: React.FC = () => {
                   disabled={isSubmitting}
                   className="w-full py-4 bg-primary text-primary-foreground font-medium rounded hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSubmitting ? 'Sending...' : 'Send Message'}
+                  {isSubmitting ? 'Sending...' : 'Request Quote'}
                 </button>
               </form>
             </div>
