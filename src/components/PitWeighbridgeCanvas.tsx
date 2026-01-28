@@ -156,24 +156,24 @@ function calculateTruckPosition(
   const pitDepth = 50;
   const scale = Math.min(width / 1920, 1);
 
-  // Starting position (off-screen left)
-  let x = -300;
+  // Starting position (off-screen right)
+  let x = width + 300;
   let y = groundY;
   let truckScale = 0.8;
   let opacity = 1;
   let isMoving = false;
 
-  // Phase 1: Enter from left
+  // Phase 1: Enter from right
   if (enterProgress > 0) {
     const t = easeOutCubic(enterProgress);
-    x = -300 + t * (pitCenterX + 100);
+    x = width + 300 - t * (width - pitCenterX + 400);
     isMoving = enterProgress < 1;
   }
 
   // Phase 2: Descend into pit
   if (descendProgress > 0) {
     const t = easeInOutCubic(descendProgress);
-    x = pitCenterX - 200 + t * 200;
+    x = pitCenterX + 200 - t * 200;
     y = groundY + t * pitDepth;
     isMoving = descendProgress < 1;
   }
@@ -188,15 +188,15 @@ function calculateTruckPosition(
   // Phase 4: Ascend out of pit
   if (ascendProgress > 0) {
     const t = easeInOutCubic(ascendProgress);
-    x = pitCenterX + t * 200;
+    x = pitCenterX - t * 200;
     y = groundY + pitDepth - t * pitDepth;
     isMoving = ascendProgress < 1;
   }
 
-  // Phase 5: Exit to right
+  // Phase 5: Exit to left
   if (exitProgress > 0) {
     const t = easeInCubic(exitProgress);
-    x = pitCenterX + 200 + t * (width - pitCenterX + 300);
+    x = pitCenterX - 200 - t * (pitCenterX + 300);
     y = groundY;
     opacity = 1 - easeInCubic(exitProgress);
     isMoving = exitProgress < 0.9;
@@ -220,13 +220,13 @@ function updateParticles(
     }
   }
 
-  // Add new particles if truck is moving
+  // Add new particles if truck is moving (spawn behind truck, which is now on the right)
   if (isMoving && particles.length < 30) {
     for (let i = 0; i < 2; i++) {
       particles.push({
-        x: truckX - 150 + Math.random() * 20,
+        x: truckX + 150 + Math.random() * 20,
         y: truckY - 30 + Math.random() * 20,
-        vx: -1 - Math.random() * 2,
+        vx: 1 + Math.random() * 2,
         vy: -0.5 - Math.random() * 1.5,
         life: 1 + Math.random() * 0.5,
         maxLife: 1.5,
@@ -470,7 +470,7 @@ function drawTruck(
   ctx.save();
   ctx.globalAlpha = opacity;
   ctx.translate(x, y + vibration);
-  ctx.scale(scale, scale);
+  ctx.scale(-scale, scale); // Mirror horizontally so truck faces left
 
   // Truck dimensions
   const cabLength = 100;
