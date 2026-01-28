@@ -5,9 +5,9 @@ import { useAnimationLoop, getHeroProgress } from '@/hooks/useAnimationLoop';
 
 const PHASES = [
   { name: 'enter', start: 0, end: 0.2, label: 'APPROACHING' },
-  { name: 'descend', start: 0.2, end: 0.35, label: 'POSITIONING' },
+  { name: 'climb', start: 0.2, end: 0.35, label: 'POSITIONING' },
   { name: 'weigh', start: 0.35, end: 0.6, label: 'MEASURING' },
-  { name: 'ascend', start: 0.6, end: 0.75, label: 'COMPLETE' },
+  { name: 'descend', start: 0.6, end: 0.75, label: 'COMPLETE' },
   { name: 'exit', start: 0.75, end: 1, label: 'DEPARTING' },
 ];
 
